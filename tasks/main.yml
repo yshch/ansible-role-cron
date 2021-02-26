@@ -3,7 +3,7 @@
 - name: find ansible managed cronjobs
   ansible.builtin.find:
     paths: /etc/cron.d
-    patterns: ansible-cron-*
+    patterns: "ansible-cron-*"
   register: _current_cron_jobs
 
 - name: cleanup old ansible managed cronjobs
@@ -13,11 +13,13 @@
   loop: "{{ _current_cron_jobs.files }}"
   loop_control:
     label: "{{ item.path }}"
-  when: item.path | basename | regex_replace("^ansible-cron-", "") not in (cron_jobs | map(attribute="name"))
+  when:
+    - item.path | basename | regex_replace("^ansible-cron-", "") not in
+        (cron_jobs | map(attribute="name") | list)
 
 - name: create cron.d files
   ansible.builtin.file:
-    path: /etc/cron.d/ansible-cron-{{ item.name }}
+    path: "/etc/cron.d/ansible-cron-{{ item.name }}"
     state: touch
     owner: "{{ item.user }}"
     group: root
@@ -26,12 +28,12 @@
     modification_time: preserve
   loop: "{{ cron_jobs }}"
   loop_control:
-    label: /etc/cron.d/ansible-cron-{{ item.name }}
+    label: "/etc/cron.d/ansible-cron-{{ item.name }}"
 
 - name: add jobs to cron.d files
   ansible.builtin.cron:
     name: "{{ item.name }}"
-    cron_file: ansible-cron-{{ item.name }}
+    cron_file: "ansible-cron-{{ item.name }}"
     job: "{{ item.job }}"
     user: "{{ item.user }}"
     minute: "{{ item.minute | default(omit) }}"
@@ -40,13 +42,13 @@
     month: "{{ item.hour | default(omit) }}"
   loop: "{{ cron_jobs }}"
   loop_control:
-    label: ansible-cron-{{ item.name }}
+    label: "ansible-cron-{{ item.name }}"
 
-- name: set cron variables
+- name: set variables
   ansible.builtin.cronvar:
     name: "{{ item.1.name }}"
     value: "{{ item.1.value }}"
-    cron_file: ansible-cron-{{ item.0.name }}
-  loop: "{{ cron_jobs | subelements('variables') | reverse }}"
+    cron_file: "ansible-cron-{{ item.0.name }}"
+  loop: "{{ cron_jobs | subelements('variables') | reverse | list }}"
   loop_control:
     label: "{{ item.1.name }}"
