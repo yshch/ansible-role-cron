@@ -10,7 +10,7 @@ rules:
     indent-sequences: true
   quoted-strings:
     quote-type: double
-    required: only-when-needed
+    required: false
   trailing-spaces: enable
   truthy:
     check-keys: true
